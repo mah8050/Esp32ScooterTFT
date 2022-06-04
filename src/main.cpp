@@ -4,8 +4,8 @@
 #include "stateIcon.h"
 PNG png; // PNG decoder inatance
 #define MAX_IMAGE_WDITH 80 // Adjust for your images
-int16_t xpos = 0;
-int16_t ypos = 0;
+byte xpos = 0;
+byte ypos = 0;
 
 // Include the TFT library https://github.com/Bodmer/TFT_eSPI
 #include "SPI.h"
@@ -21,54 +21,26 @@ void pngDraw(PNGDRAW *pDraw) {
 void logoDisplay(){
     int16_t rc = png.openFLASH((uint8_t *)scooter, sizeof(scooter), pngDraw);
   if (rc == PNG_SUCCESS) {
-    Serial.println("Successfully png file");
-    Serial.printf("image specs: (%d x %d), %d bpp, pixel type: %d\n", png.getWidth(), png.getHeight(), png.getBpp(), png.getPixelType());
     tft.startWrite();
-    uint32_t dt = millis();
     rc = png.decode(NULL, 0);
-    Serial.print(millis() - dt); Serial.println("ms");
     tft.endWrite();
     delay(3000);
     tft.fillScreen(TFT_BLACK);
-     png.close(); // not needed for memory->memory decode
+    png.close(); // not needed for memory->memory decode
   }
 }
 //TESSSSSSSSSSSSSSSSSSSSTTT
 void statusDisplay(byte icon){
   //Serial.println(ESP.getFreeHeap());
   xpos=0;
-  ypos=80;
+  ypos=0;
   uint8_t *iname;
   int16_t isize;
   switch (icon)
   {
   case 1:
-    iname = (uint8_t *)charge;
-    isize=sizeof(charge);
-    break;
-  case 2:
-    iname = (uint8_t *)heavy;
-    isize=sizeof(heavy);
-    break;
-  case 3:
-    iname = (uint8_t *)fast;
-    isize=sizeof(fast);
-    break;
-  case 4:
-    iname = (uint8_t *)off;
-    isize=sizeof(off);
-    break;
-  case 5:
-    iname = (uint8_t *)location;
-    isize=sizeof(location);
-    break;
-  case 6:
-    iname = (uint8_t *)locked;
-    isize=sizeof(locked);
-    break;
-  case 7:
-    iname = (uint8_t *)on;
-    isize=sizeof(on);
+    iname = (uint8_t *)mainbg;
+    isize=sizeof(mainbg);
     break;
   default:
     break;
@@ -82,16 +54,97 @@ void statusDisplay(byte icon){
     Serial.println(sizeof(iname));
   }
 }
+void icoDisplay(byte iCon){
+  //Serial.println(ESP.getFreeHeap());
+  uint8_t *iname;
+  int16_t isize;
+  iname = (uint8_t *)bat0;
+  xpos=53;
+  ypos=3;
+  isize=sizeof(bat0);
+  switch (iCon)
+  {
+  case 0:
+    iname = (uint8_t *)bat0;
+    isize=sizeof(bat0);
+    xpos=53;
+    ypos=3;
+    break;
+  case 1:
+    iname = (uint8_t *)bat1;
+    isize=sizeof(bat1);
+    xpos=53;
+    ypos=3;
+    break;
+  case 3:
+    iname = (uint8_t *)bat2;
+    isize=sizeof(bat2);
+    xpos=53;
+    ypos=3;
+    break;
+  case 4:
+    iname = (uint8_t *)bat3;
+    isize=sizeof(bat3);
+    xpos=53;
+    ypos=3;
+    break;
+  case 5:
+    iname = (uint8_t *)bat4;
+    isize=sizeof(bat4);
+    xpos=53;
+    ypos=3;
+    break;
+  case 6:
+    iname = (uint8_t *)BT;
+    isize=sizeof(BT);
+    xpos=0;
+    ypos=0;
+    break;
+  case 7:
+    iname = (uint8_t *)wifi;
+    isize=sizeof(wifi);
+    xpos=20;
+    ypos=1;
+    break;
+  case 8:
+    iname = (uint8_t *)eco;
+    isize=sizeof(eco);
+    xpos=50;
+    ypos=25;
+    break; 
+  case 9:
+    iname = (uint8_t *)normal;
+    isize=sizeof(normal);
+    xpos=50;
+    ypos=25;
+    break;
+  case 10:
+    iname = (uint8_t *)sport;
+    isize=sizeof(sport);
+    xpos=50;
+    ypos=25;
+    break;   
+  default:
+    iname = (uint8_t *)mainbg;
+    isize=sizeof(mainbg); 
+    xpos=0;
+    ypos=0;  
+    break;
+  }
+    int16_t rc = png.openFLASH(iname, isize, pngDraw);
+  if (rc == PNG_SUCCESS) {
+    tft.startWrite();
+    rc = png.decode(NULL, 0);
+    tft.endWrite();
+    //png.close(); // not needed for memory->memory decode
+  }
+}
 
 void speedDisplay(char speed){
   tft.setTextColor(TFT_BLACK, TFT_BLACK);
-  tft.drawString("88",10,0,7);
+  tft.drawString("88",15,65,7);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  if(speed < 10){
-    tft.drawNumber(0,10,0,7);
-    tft.drawNumber(speed,44,0,7);
-  }
-  else tft.drawNumber(speed,10,0,7);
+  tft.drawNumber(speed,15,65,7);
 }
 void modeDisplay(byte mode){
   uint16_t color;
@@ -130,7 +183,8 @@ void setup()
   // Initialise the TFT
   tft.begin();
   tft.fillScreen(TFT_BLACK);
-  //logoDisplay();
+  logoDisplay();
+  statusDisplay(0);
   Serial.println("\r\nInitialisation done.");
 }
 //====================================================================================
@@ -139,10 +193,12 @@ void setup()
 void loop()
 {
   // modeDisplay(random(3));
-  statusDisplay(random(8));
+  // statusDisplay(0);
+  speedDisplay(random(30));
+  icoDisplay(random(11));
   delay(1000);
   // for (int i=0;i<10;i++){
-  //  speedDisplay(i);
+
   //  delay(300);
   // }
 }
