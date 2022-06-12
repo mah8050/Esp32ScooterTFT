@@ -51,92 +51,20 @@ void statusDisplay(byte icon){
     rc = png.decode(NULL, 0);
     tft.endWrite();
     png.close(); // not needed for memory->memory decode
-    Serial.println(sizeof(iname));
   }
 }
-void icoDisplay(byte iCon){
-  //Serial.println(ESP.getFreeHeap());
-  uint8_t *iname;
-  int16_t isize;
-  iname = (uint8_t *)bat0;
-  xpos=53;
-  ypos=3;
-  isize=sizeof(bat0);
-  switch (iCon)
-  {
-  case 0:
-    iname = (uint8_t *)bat0;
-    isize=sizeof(bat0);
-    xpos=53;
-    ypos=3;
-    break;
-  case 1:
-    iname = (uint8_t *)bat1;
-    isize=sizeof(bat1);
-    xpos=53;
-    ypos=3;
-    break;
-  case 3:
-    iname = (uint8_t *)bat2;
-    isize=sizeof(bat2);
-    xpos=53;
-    ypos=3;
-    break;
-  case 4:
-    iname = (uint8_t *)bat3;
-    isize=sizeof(bat3);
-    xpos=53;
-    ypos=3;
-    break;
-  case 5:
-    iname = (uint8_t *)bat4;
-    isize=sizeof(bat4);
-    xpos=53;
-    ypos=3;
-    break;
-  case 6:
-    iname = (uint8_t *)BT;
-    isize=sizeof(BT);
-    xpos=0;
-    ypos=0;
-    break;
-  case 7:
-    iname = (uint8_t *)wifi;
-    isize=sizeof(wifi);
-    xpos=20;
-    ypos=1;
-    break;
-  case 8:
-    iname = (uint8_t *)eco;
-    isize=sizeof(eco);
-    xpos=50;
-    ypos=25;
-    break; 
-  case 9:
-    iname = (uint8_t *)normal;
-    isize=sizeof(normal);
-    xpos=50;
-    ypos=25;
-    break;
-  case 10:
-    iname = (uint8_t *)sport;
-    isize=sizeof(sport);
-    xpos=50;
-    ypos=25;
-    break;   
-  default:
-    iname = (uint8_t *)mainbg;
-    isize=sizeof(mainbg); 
-    xpos=0;
-    ypos=0;  
-    break;
-  }
-    int16_t rc = png.openFLASH(iname, isize, pngDraw);
+void icoDisplay(const uint8_t *icname,byte ix,byte iy){
+  // iname = (uint8_t *)iname;
+  size_t i=strlen(icname);
+  xpos=ix;
+  ypos=iy;
+  int16_t rc = png.openFLASH((uint8_t *)icname,sizeof(icname), pngDraw);
+  Serial.println(i);
   if (rc == PNG_SUCCESS) {
     tft.startWrite();
     rc = png.decode(NULL, 0);
     tft.endWrite();
-    //png.close(); // not needed for memory->memory decode
+    png.close(); // not needed for memory->memory decode
   }
 }
 
@@ -195,7 +123,7 @@ void loop()
   // modeDisplay(random(3));
   // statusDisplay(0);
   speedDisplay(random(30));
-  icoDisplay(random(11));
+  icoDisplay(bat0,53,3);
   delay(1000);
   // for (int i=0;i<10;i++){
 
