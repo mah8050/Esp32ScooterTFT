@@ -2,6 +2,11 @@
 #include <PNGdec.h>
 #include "scooter.h" // Image is stored here in an 8 bit array
 #include "stateIcon.h"
+//Freq Counter
+#include "FreqCountESP.h"
+int inputPin = 5;
+int timerMs = 1000;
+//display PNG
 PNG png; // PNG decoder inatance
 #define MAX_IMAGE_WDITH 80 // Adjust for your images
 byte xpos = 0;
@@ -53,20 +58,20 @@ void statusDisplay(byte icon){
     png.close(); // not needed for memory->memory decode
   }
 }
-void icoDisplay(const uint8_t *icname,byte ix,byte iy){
-  // iname = (uint8_t *)iname;
-  size_t i=strlen(icname);
-  xpos=ix;
-  ypos=iy;
-  int16_t rc = png.openFLASH((uint8_t *)icname,sizeof(icname), pngDraw);
-  Serial.println(i);
-  if (rc == PNG_SUCCESS) {
-    tft.startWrite();
-    rc = png.decode(NULL, 0);
-    tft.endWrite();
-    png.close(); // not needed for memory->memory decode
-  }
-}
+// void icoDisplay(const uint8_t *icname,byte ix,byte iy){
+//   // iname = (uint8_t *)iname;
+//   size_t i=strlen(icname);
+//   xpos=ix;
+//   ypos=iy;
+//   int16_t rc = png.openFLASH((uint8_t *)icname,sizeof(icname), pngDraw);
+//   Serial.println(i);
+//   if (rc == PNG_SUCCESS) {
+//     tft.startWrite();
+//     rc = png.decode(NULL, 0);
+//     tft.endWrite();
+//     png.close(); // not needed for memory->memory decode
+//   }
+// }
 
 void speedDisplay(char speed){
   tft.setTextColor(TFT_BLACK, TFT_BLACK);
@@ -113,6 +118,7 @@ void setup()
   tft.fillScreen(TFT_BLACK);
   logoDisplay();
   statusDisplay(0);
+  FreqCountESP.begin(inputPin, timerMs);
   Serial.println("\r\nInitialisation done.");
 }
 //====================================================================================
@@ -120,15 +126,20 @@ void setup()
 //====================================================================================
 void loop()
 {
-  // modeDisplay(random(3));
-  // statusDisplay(0);
-  speedDisplay(random(30));
-  icoDisplay(bat0,53,3);
+  // icoDisplay(bat0,53,3);
   delay(1000);
   // for (int i=0;i<10;i++){
 
   //  delay(300);
   // }
+
+  //show speed
+  if (FreqCountESP.available())
+  {
+    uint32_t frequency = FreqCountESP.read();
+    Serial.println(frequency/1000);
+    speedDisplay(frequency/1000);
+  }
 }
 
 
