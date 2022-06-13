@@ -6,6 +6,13 @@
 #include "FreqCountESP.h"
 int inputPin = 5;
 int timerMs = 1000;
+//Set Speed PWM from ADC
+int speedADCPIN = 34; //set Gpio 34 as speed ADC
+ int speedOutPIN = 13; // set GPIO 35 as pwm out
+int PWMFreq = 1000;
+int PWMChannel = 0;
+int PWMResolution = 12;
+int ADC_RESOLUTION = 4095;
 //display PNG
 PNG png; // PNG decoder inatance
 #define MAX_IMAGE_WDITH 80 // Adjust for your images
@@ -105,6 +112,14 @@ void modeDisplay(byte mode){
   Serial.println(modeText);
   tft.drawCentreString(modeText,40,60,4);
 }
+void setSpeed(){
+  uint16_t dutyCycle;
+  dutyCycle=analogRead(speedADCPIN);
+   dutyCycle = map(dutyCycle, 0, ADC_RESOLUTION, 0, (int)(pow(2, PWMResolution) - 1));
+   ledcWrite(PWMChannel, dutyCycle);
+  Serial.print("duty=");
+  Serial.println(dutyCycle);
+}
 //====================================================================================
 //                                    Setup
 //====================================================================================
@@ -112,7 +127,8 @@ void setup()
 {
   Serial.begin(9600);
   Serial.println("\n\n Using the PNGdec library");
-
+  ledcSetup(PWMChannel, PWMFreq, PWMResolution);
+  ledcAttachPin(speedOutPIN, PWMChannel);
   // Initialise the TFT
   tft.begin();
   tft.fillScreen(TFT_BLACK);
@@ -137,9 +153,10 @@ void loop()
   if (FreqCountESP.available())
   {
     uint32_t frequency = FreqCountESP.read();
-    Serial.println(frequency/1000);
-    speedDisplay(frequency/1000);
+    //Serial.println(frequency/1000);
+    speedDisplay(frequency/100);
   }
+  setSpeed();
 }
 
 
