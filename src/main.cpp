@@ -8,11 +8,17 @@ int inputPin = 5;
 int timerMs = 1000;
 //Set Speed PWM from ADC
 int speedADCPIN = 34; //set Gpio 34 as speed ADC
- int speedOutPIN = 13; // set GPIO 35 as pwm out
+int speedOutPIN = 13; // set GPIO 35 as pwm out
 int PWMFreq = 1000;
 int PWMChannel = 0;
 int PWMResolution = 12;
 int ADC_RESOLUTION = 4095;
+uint32_t frequency;
+uint16_t actualSpeed;
+byte speedCount;
+byte cruiseControl;
+uint16_t dutyCycle;
+uint16_t adcRead;
 //display PNG
 PNG png; // PNG decoder inatance
 #define MAX_IMAGE_WDITH 80 // Adjust for your images
@@ -42,22 +48,11 @@ void logoDisplay(){
   }
 }
 //TESSSSSSSSSSSSSSSSSSSSTTT
-void statusDisplay(byte icon){
+void mainBgDisplay(byte icon){
   //Serial.println(ESP.getFreeHeap());
   xpos=0;
   ypos=0;
-  uint8_t *iname;
-  int16_t isize;
-  switch (icon)
-  {
-  case 1:
-    iname = (uint8_t *)mainbg;
-    isize=sizeof(mainbg);
-    break;
-  default:
-    break;
-  }
-    int16_t rc = png.openFLASH(iname, isize, pngDraw);
+  int16_t rc = png.openFLASH((uint8_t *)mainbg, sizeof(mainbg), pngDraw);
   if (rc == PNG_SUCCESS) {
     tft.startWrite();
     rc = png.decode(NULL, 0);
@@ -65,20 +60,18 @@ void statusDisplay(byte icon){
     png.close(); // not needed for memory->memory decode
   }
 }
-// void icoDisplay(const uint8_t *icname,byte ix,byte iy){
-//   // iname = (uint8_t *)iname;
-//   size_t i=strlen(icname);
-//   xpos=ix;
-//   ypos=iy;
-//   int16_t rc = png.openFLASH((uint8_t *)icname,sizeof(icname), pngDraw);
-//   Serial.println(i);
-//   if (rc == PNG_SUCCESS) {
-//     tft.startWrite();
-//     rc = png.decode(NULL, 0);
-//     tft.endWrite();
-//     png.close(); // not needed for memory->memory decode
-//   }
-// }
+void icoDisplay(uint8_t *icname,int size,byte ix,byte iy){
+  // uint8_t *iname ;
+  xpos=ix;
+  ypos=iy;
+  int16_t rc = png.openFLASH(icname,size, pngDraw);
+  if (rc == PNG_SUCCESS) {
+    tft.startWrite();
+    rc = png.decode(NULL, 0);
+    tft.endWrite();
+    png.close(); // not needed for memory->memory decode
+  }
+}
 
 void speedDisplay(char speed){
   tft.setTextColor(TFT_BLACK, TFT_BLACK);
@@ -112,14 +105,29 @@ void modeDisplay(byte mode){
   Serial.println(modeText);
   tft.drawCentreString(modeText,40,60,4);
 }
+
+//setspeed
 void setSpeed(){
-  uint16_t dutyCycle;
-  dutyCycle=analogRead(speedADCPIN);
-   dutyCycle = map(dutyCycle, 0, ADC_RESOLUTION, 0, (int)(pow(2, PWMResolution) - 1));
-   ledcWrite(PWMChannel, dutyCycle);
+
+  /* Cruise Control First Implementation
+  if(speedCount <= 5 && dutyCycle!=actualSpeed){
+    adcRead=analogRead(speedADCPIN);
+  }else if(speedCount <=5 && dutyCycle==actualSpeed){
+    adcRead=analogRead(speedADCPIN);
+    speedCount++;
+  }else if(speedCount>=5 && cruiseControl==0 && (dutyCycle==actualSpeed || analogRead(speedADCPIN) < 20)){
+    cruiseControl=1;
+  }else if (speedCount>=5 && cruiseControl==1 && analogRead(speedADCPIN) > 20){
+    cruiseControl=0;
+    speedCount=0;
+  }*/
+  adcRead=analogRead(speedADCPIN);
+  dutyCycle = map(adcRead, 0, ADC_RESOLUTION, 0, (int)(pow(2, PWMResolution) - 1));
+  ledcWrite(PWMChannel, dutyCycle);
   Serial.print("duty=");
   Serial.println(dutyCycle);
 }
+
 //====================================================================================
 //                                    Setup
 //====================================================================================
@@ -133,7 +141,7 @@ void setup()
   tft.begin();
   tft.fillScreen(TFT_BLACK);
   logoDisplay();
-  statusDisplay(0);
+  mainBgDisplay(0);
   FreqCountESP.begin(inputPin, timerMs);
   Serial.println("\r\nInitialisation done.");
 }
@@ -142,21 +150,23 @@ void setup()
 //====================================================================================
 void loop()
 {
-  // icoDisplay(bat0,53,3);
+  icoDisplay((uint8_t *)bat0,sizeof(bat0),53,3);
   delay(1000);
   // for (int i=0;i<10;i++){
-
+  
   //  delay(300);
   // }
 
   //show speed
-  if (FreqCountESP.available())
-  {
-    uint32_t frequency = FreqCountESP.read();
-    //Serial.println(frequency/1000);
-    speedDisplay(frequency/100);
-  }
-  setSpeed();
+  // if (FreqCountESP.available())
+  // {
+  //   frequency = FreqCountESP.read();
+  //   //Serial.println(frequency/1000);
+  //   speedDisplay(frequency/10);
+  //   actualSpeed=frequency/10;
+
+  // }
+  // setSpeed();
 }
 
 
