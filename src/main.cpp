@@ -19,6 +19,7 @@ byte speedCount;
 byte cruiseControl;
 uint16_t dutyCycle;
 uint16_t adcRead;
+int maxSpeed=30;
 //display PNG
 PNG png; // PNG decoder inatance
 #define MAX_IMAGE_WDITH 80 // Adjust for your images
@@ -122,10 +123,18 @@ void setSpeed(){
     speedCount=0;
   }*/
   adcRead=analogRead(speedADCPIN);
-  dutyCycle = map(adcRead, 0, ADC_RESOLUTION, 0, (int)(pow(2, PWMResolution) - 1));
+  dutyCycle = map(adcRead, 900, 2960, 0, maxSpeed*100);
+  if(dutyCycle>=2950 || dutyCycle <= 20){
+  tft.fillScreen(TFT_YELLOW);
+  tft.setTextColor(TFT_RED, TFT_BLACK);
+  tft.drawCentreString("Error",40,20,4);
+  tft.setTextColor(TFT_BLACK, TFT_YELLOW);
+  tft.drawCentreString("Sensor",40,50,2);
+  tft.drawCentreString("Error",40,70,2);
+
+  }else{
   ledcWrite(PWMChannel, dutyCycle);
-  Serial.print("duty=");
-  Serial.println(dutyCycle);
+  }
 }
 
 //====================================================================================
@@ -156,7 +165,8 @@ void loop()
   
   //  delay(300);
   // }
-
+setSpeed();
+Serial.println(dutyCycle);
   //show speed
   // if (FreqCountESP.available())
   // {
