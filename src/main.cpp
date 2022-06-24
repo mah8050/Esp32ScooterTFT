@@ -4,14 +4,15 @@
 #include "stateIcon.h"
 //Freq Counter
 #include "FreqCountESP.h"
+#define DAC1 25
 int inputPin = 5;
 int timerMs = 1000;
 //Set Speed PWM from ADC
 int speedADCPIN = 34; //set Gpio 34 as speed ADC
 int speedOutPIN = 13; // set GPIO 35 as pwm out
-int PWMFreq = 1000;
+int PWMFreq = 10000;
 int PWMChannel = 0;
-int PWMResolution = 12;
+int PWMResolution = 10;
 int ADC_RESOLUTION = 4095;
 uint32_t frequency;
 uint16_t actualSpeed;
@@ -19,6 +20,7 @@ byte speedCount;
 byte cruiseControl;
 uint16_t dutyCycle;
 uint16_t adcRead;
+byte dacVal;
 int maxSpeed=30;
 //display PNG
 PNG png; // PNG decoder inatance
@@ -123,7 +125,8 @@ void setSpeed(){
     speedCount=0;
   }*/
   adcRead=analogRead(speedADCPIN);
-  dutyCycle = map(adcRead, 900, 2960, 0, maxSpeed*100);
+  //dutyCycle = map(adcRead, 900, 2960, 0, maxSpeed*100);
+  dacVal = map(adcRead, 900, 2960, 0, 255);
   if(dutyCycle>=2950 || dutyCycle <= 20){
   tft.fillScreen(TFT_YELLOW);
   tft.setTextColor(TFT_RED, TFT_BLACK);
@@ -133,7 +136,7 @@ void setSpeed(){
   tft.drawCentreString("Error",40,70,2);
 
   }else{
-  ledcWrite(PWMChannel, dutyCycle);
+     dacWrite(DAC1,dacVal);
   }
 }
 
@@ -165,8 +168,10 @@ void loop()
   
   //  delay(300);
   // }
-setSpeed();
-Serial.println(dutyCycle);
+// setSpeed();
+dacWrite(DAC1,dacVal);
+// ledcWrite(PWMChannel, 550);
+Serial.println(dacVal);
   //show speed
   // if (FreqCountESP.available())
   // {
@@ -176,7 +181,7 @@ Serial.println(dutyCycle);
   //   actualSpeed=frequency/10;
 
   // }
-  // setSpeed();
+  setSpeed();
 }
 
 
