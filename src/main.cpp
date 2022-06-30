@@ -5,21 +5,26 @@
 //Freq Counter
 #include "FreqCountESP.h"
 #define DAC1 25
-int inputPin = 5;
+int inputPin = 13;
 int timerMs = 1000;
 //Set Speed PWM from ADC
 int speedADCPIN = 34; //set Gpio 34 as speed ADC
-int speedOutPIN = 13; // set GPIO 35 as pwm out
+int speedOutPIN = 27; // set GPIO 35 as pwm out
 int PWMFreq = 10000;
 int PWMChannel = 0;
 int PWMResolution = 10;
-int ADC_RESOLUTION = 4095;
+int dacValold=0;
+int speedValold=0;
+int speedVal;
+bool incCommand;
+bool incSpeed;
+int i; //test
 uint32_t frequency;
 uint16_t actualSpeed;
 byte speedCount;
 byte cruiseControl;
 uint16_t dutyCycle;
-uint16_t adcRead;
+uint16_t adcRead=0;
 byte dacVal;
 int maxSpeed=30;
 //display PNG
@@ -111,7 +116,6 @@ void modeDisplay(byte mode){
 
 //setspeed
 void setSpeed(){
-
   /* Cruise Control First Implementation
   if(speedCount <= 5 && dutyCycle!=actualSpeed){
     adcRead=analogRead(speedADCPIN);
@@ -124,20 +128,48 @@ void setSpeed(){
     cruiseControl=0;
     speedCount=0;
   }*/
-  adcRead=analogRead(speedADCPIN);
-  //dutyCycle = map(adcRead, 900, 2960, 0, maxSpeed*100);
-  dacVal = map(adcRead, 900, 2960, 0, 255);
-  if(dutyCycle>=2950 || dutyCycle <= 20){
-  tft.fillScreen(TFT_YELLOW);
-  tft.setTextColor(TFT_RED, TFT_BLACK);
-  tft.drawCentreString("Error",40,20,4);
-  tft.setTextColor(TFT_BLACK, TFT_YELLOW);
-  tft.drawCentreString("Sensor",40,50,2);
-  tft.drawCentreString("Error",40,70,2);
-
-  }else{
-     dacWrite(DAC1,dacVal);
+  for (int a=0;a<=100;a++){
+  adcRead=(99.0*adcRead+analogRead(speedADCPIN))/100.0;
   }
+  //dutyCycle = map(adcRead, 900, 2960, 0, maxSpeed*100);
+  if(adcRead<=400) adcRead=400;
+  if(adcRead>=1830 && adcRead<=4000) adcRead=1830;
+  dacVal = map(adcRead, 360, 1830, 0, 254);
+  if (FreqCountESP.available()) speedVal=FreqCountESP.read(); else speedVal=speedValold;
+  if((dacVal-dacValold)>=0) incCommand = true; else incCommand = false;
+  if((speedVal-speedValold)>=0) incSpeed=true; else incSpeed=false;
+  while(adcRead>=4000){
+    dacVal=0;
+    dacWrite(DAC1,dacVal);
+    dacDisable(DAC1);
+    pinMode(DAC1,OUTPUT);
+    digitalWrite(DAC1,0);
+    tft.fillScreen(TFT_YELLOW);
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+    tft.drawCentreString("Error",40,20,4);
+    tft.setTextColor(TFT_BLACK, TFT_YELLOW);
+    tft.drawCentreString("Sensor",40,50,2);
+    tft.drawCentreString("Error",40,70,2);
+  }
+ if(dacVal>50 && dacVal<254 && speedVal>=60){
+    dacWrite(DAC1,dacVal);
+    Serial.println("running");
+  }
+  if(dacVal>=230 && (speedVal/10)==0){
+      dacDisable(DAC1);
+      pinMode(DAC1,OUTPUT);
+      digitalWrite(DAC1,0);
+      Serial.println("motor Error");
+      delay(1000);
+     }
+  if(dacVal<=50 && !incCommand && !incSpeed){
+      dacDisable(DAC1);
+      pinMode(DAC1,OUTPUT);
+      digitalWrite(DAC1,0);
+  }
+  dacValold=dacVal;
+  speedValold=speedVal;
+
 }
 
 //====================================================================================
@@ -155,6 +187,9 @@ void setup()
   logoDisplay();
   mainBgDisplay(0);
   FreqCountESP.begin(inputPin, timerMs);
+  dacDisable(DAC1);
+  pinMode(DAC1,OUTPUT);
+  digitalWrite(DAC1,0);
   Serial.println("\r\nInitialisation done.");
 }
 //====================================================================================
@@ -163,24 +198,39 @@ void setup()
 void loop()
 {
   icoDisplay((uint8_t *)bat0,sizeof(bat0),53,3);
-  delay(1000);
+  delay(50);
   // for (int i=0;i<10;i++){
   
   //  delay(300);
   // }
 // setSpeed();
-dacWrite(DAC1,dacVal);
-// ledcWrite(PWMChannel, 550);
-Serial.println(dacVal);
-  //show speed
-  // if (FreqCountESP.available())
-  // {
-  //   frequency = FreqCountESP.read();
-  //   //Serial.println(frequency/1000);
-  //   speedDisplay(frequency/10);
-  //   actualSpeed=frequency/10;
 
-  // }
+// for(i=10;i<=254;i++){
+// dacWrite(DAC1,i);
+// Serial.println(i);
+// delay(200);
+// }
+// for(i;i>=10;i--){
+// dacWrite(DAC1,i);
+// Serial.println(i);
+// delay(200); 
+// }
+// ledcWrite(PWMChannel, 550);
+Serial.print(adcRead);
+Serial.print(":");
+Serial.print(dacVal);
+Serial.print(":");
+Serial.println(frequency);
+
+  //show speed
+  if (FreqCountESP.available())
+  {
+    frequency = FreqCountESP.read();
+    Serial.println(frequency);
+    speedDisplay(frequency/10);
+    actualSpeed=frequency/10;
+
+  }
   setSpeed();
 }
 
