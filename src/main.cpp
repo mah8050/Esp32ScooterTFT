@@ -2,9 +2,15 @@
 #include <PNGdec.h>
 #include "scooter.h" // Image is stored here in an 8 bit array
 #include "stateIcon.h"
+#include "LapX9C10X.h"
 //Freq Counter
 #include "FreqCountESP.h"
+//DAC
 #define DAC1 25
+//Digital POT X9C104
+#define POT_CSPIN 26
+#define POT_INCPIN 27
+#define POT_UDPIN 28
 int inputPin = 13;
 int timerMs = 1000;
 //Set Speed PWM from ADC
@@ -27,6 +33,9 @@ uint16_t dutyCycle;
 uint16_t adcRead=0;
 byte dacVal;
 int maxSpeed=30;
+// Digital POT Object
+LapX9C10X POTControl(POT_INCPIN, POT_UDPIN, POT_CSPIN, LAPX9C10X_X9C104);
+
 //display PNG
 PNG png; // PNG decoder inatance
 #define MAX_IMAGE_WDITH 80 // Adjust for your images
@@ -134,16 +143,26 @@ void setSpeed(){
   //dutyCycle = map(adcRead, 900, 2960, 0, maxSpeed*100);
   if(adcRead<=400) adcRead=400;
   if(adcRead>=1830 && adcRead<=4000) adcRead=1830;
-  dacVal = map(adcRead, 360, 1830, 0, 254);
+  dacVal = map(adcRead, 400, 1830, 0, 100);
   if (FreqCountESP.available()) speedVal=FreqCountESP.read(); else speedVal=speedValold;
-  if((dacVal-dacValold)>=0) incCommand = true; else incCommand = false;
-  if((speedVal-speedValold)>=0) incSpeed=true; else incSpeed=false;
+  if((dacVal-dacValold)>0){
+    incCommand = true;
+    Serial.println("incCommand:True");
+    }
+   else {
+    incCommand = false;
+    Serial.println("incCommand:false");
+    }
+  if((speedVal-speedValold)>0) {
+    incSpeed=true;
+    Serial.println("incspeed:true");
+    } else {
+      incSpeed=false;
+      Serial.println("incspeed:false");
+      }
   while(adcRead>=4000){
     dacVal=0;
-    dacWrite(DAC1,dacVal);
-    dacDisable(DAC1);
-    pinMode(DAC1,OUTPUT);
-    digitalWrite(DAC1,0);
+    POTControl.set(0);
     tft.fillScreen(TFT_YELLOW);
     tft.setTextColor(TFT_RED, TFT_BLACK);
     tft.drawCentreString("Error",40,20,4);
@@ -151,21 +170,18 @@ void setSpeed(){
     tft.drawCentreString("Sensor",40,50,2);
     tft.drawCentreString("Error",40,70,2);
   }
- if(dacVal>50 && dacVal<254 && speedVal>=60){
-    dacWrite(DAC1,dacVal);
+
+ if(dacVal>10 && dacVal<100 && speedVal>=0){
+    POTControl.set(dacVal);
     Serial.println("running");
   }
-  if(dacVal>=230 && (speedVal/10)==0){
-      dacDisable(DAC1);
-      pinMode(DAC1,OUTPUT);
-      digitalWrite(DAC1,0);
+  if(dacVal>=98 && (speedVal/10)==0 && !incSpeed){
+      POTControl.set(0);
       Serial.println("motor Error");
       delay(1000);
      }
-  if(dacVal<=50 && !incCommand && !incSpeed){
-      dacDisable(DAC1);
-      pinMode(DAC1,OUTPUT);
-      digitalWrite(DAC1,0);
+  if(dacVal<=10 && !incCommand && !incSpeed){
+      POTControl.set(0);
   }
   dacValold=dacVal;
   speedValold=speedVal;
@@ -179,17 +195,13 @@ void setup()
 {
   Serial.begin(9600);
   Serial.println("\n\n Using the PNGdec library");
-  ledcSetup(PWMChannel, PWMFreq, PWMResolution);
-  ledcAttachPin(speedOutPIN, PWMChannel);
+  POTControl.begin(-1);  //init POT
   // Initialise the TFT
   tft.begin();
   tft.fillScreen(TFT_BLACK);
   logoDisplay();
   mainBgDisplay(0);
   FreqCountESP.begin(inputPin, timerMs);
-  dacDisable(DAC1);
-  pinMode(DAC1,OUTPUT);
-  digitalWrite(DAC1,0);
   Serial.println("\r\nInitialisation done.");
 }
 //====================================================================================
