@@ -6,11 +6,11 @@
 //Freq Counter
 #include "FreqCountESP.h"
 //DAC
-#define DAC1 25
+#define DAC1 20
 //Digital POT X9C104
-#define POT_CSPIN 26
-#define POT_INCPIN 27
-#define POT_UDPIN 28
+#define POT_CSPIN 25
+#define POT_INCPIN 33
+#define POT_UDPIN 32
 int inputPin = 13;
 int timerMs = 1000;
 //Set Speed PWM from ADC
@@ -145,20 +145,20 @@ void setSpeed(){
   if(adcRead>=1830 && adcRead<=4000) adcRead=1830;
   dacVal = map(adcRead, 400, 1830, 0, 100);
   if (FreqCountESP.available()) speedVal=FreqCountESP.read(); else speedVal=speedValold;
-  if((dacVal-dacValold)>0){
+  if((dacVal-dacValold)>=0){
     incCommand = true;
-    Serial.println("incCommand:True");
+    Serial.print("incCommand:True ;");
     }
    else {
     incCommand = false;
-    Serial.println("incCommand:false");
+    Serial.print("incCommand:false ;");
     }
   if((speedVal-speedValold)>0) {
     incSpeed=true;
-    Serial.println("incspeed:true");
+    Serial.print("incspeed:true ;");
     } else {
       incSpeed=false;
-      Serial.println("incspeed:false");
+      Serial.print("incspeed:false ;");
       }
   while(adcRead>=4000){
     dacVal=0;
@@ -171,16 +171,28 @@ void setSpeed(){
     tft.drawCentreString("Error",40,70,2);
   }
 
- if(dacVal>10 && dacVal<100 && speedVal>=0){
-    POTControl.set(dacVal);
-    Serial.println("running");
+ if(dacVal>10 && dacVal<100 && speedVal>=5){
+    //POTControl.set(dacVal);
+    // if(incCommand){
+    //   for (int i=dacValold; i<dacVal;i++) {
+        POTControl.set(i);    
+      //   delay(20);
+      // }
+    // }
+    // if(!incCommand){
+    //   for (int i=dacValold; i>=dacVal;i--) {
+    //     POTControl.set(i);    
+    //     delay(20);
+    //   }
+    // }
+    // Serial.println("running");
   }
-  if(dacVal>=98 && (speedVal/10)==0 && !incSpeed){
-      POTControl.set(0);
-      Serial.println("motor Error");
-      delay(1000);
-     }
-  if(dacVal<=10 && !incCommand && !incSpeed){
+  // if(dacVal>=95 && (speedVal/10)==0 && !incSpeed){
+  //     POTControl.set(0);
+  //     Serial.println("motor Error");
+  //     delay(1000);
+  //    }
+  if(dacVal<=10){
       POTControl.set(0);
   }
   dacValold=dacVal;
@@ -238,7 +250,7 @@ Serial.println(frequency);
   if (FreqCountESP.available())
   {
     frequency = FreqCountESP.read();
-    Serial.println(frequency);
+    // Serial.println(frequency);
     speedDisplay(frequency/10);
     actualSpeed=frequency/10;
 
